@@ -221,7 +221,7 @@ var controller = {
                 Article.findByIdAndUpdate(articleId, {image: file_name}).exec();
                 return res.status(200).send({
                     status: 'success',
-                    article: articleUpdated
+                    article: file_name
                 });
             } catch (error) {
                 return res.status(500).send({
@@ -234,6 +234,72 @@ var controller = {
         }
        
         
+    },
+    download: (req, res) => {
+        var articleId = req.params.id;
+        try {
+            Article.findById(articleId, (err, article)=>
+            {
+                
+                if(err || !article){
+                    return res.status(404).send({
+                        status: 'success',
+                        message:'No existe el articulo!!!'
+                    }); 
+                }
+                var path_file = './upload/articles/'+article.image;
+                
+                    fs.exists(path_file, (exists) => {
+                        if(exists){
+                            return res.sendFile(path.resolve(path_file));
+                        }
+                        else {
+                            return res.status(404).send({
+                                status: 'error',
+                                message: '¡La imagen no existe!'
+                            })
+                        }
+                    });
+            
+            });
+        } catch (error) {
+            return res.status(500).send({
+                status: 'error',
+                message: error
+            });
+        }
+     
+       
+    },
+    search: (req, res) => {
+
+        var searchString = req.params.search;
+        Article.find({
+            '$or': [
+                {"title": {'$regex': searchString, "$options": 'i'}},
+                {"content": {'$regex': searchString, "$options": 'i'}}
+            ]
+        }).sort([['date', 'descending']])
+            .exec((err, articles)=>{
+                if(err){
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'Error en la petición'
+                    });
+                }
+                if(!articles || articles.length === 0){
+                    return res.status(200).send({
+                        status: 'success',
+                        message: 'No existen articulos para mostrar, que coincidan con la busqueda'
+                    });
+                }
+                return res.status(200).send({
+                    status: 'success',
+                    articles
+                });
+                
+            });
+
     }
 
 }
